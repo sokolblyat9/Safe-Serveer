@@ -177,7 +177,248 @@ automatic_password
 
 
 
+function Update_and_Upgarde_Remote_Server {
+echo "Обновим пакеты на сервере, но сначала узнаем какую операционную систему ты используешь"
+os_info=$(lsb_release -a)
+    if [[ $os_info == *"CentOS"* || $os_info == *"Fedora"* ]]; then
+        yum update
+    elif
+        [[ $os_info == *"Debian"* || $os_info == *"Ubuntu"* ]]; then
+        sudo apt update && sudo apt upgrade -y
+    else
+        echo "Вы пользуетесь MacOS"
+    fi
+}
+Update_and_Upgarde_Remote_Server
 
+
+#function Add_New_User {
+#PS3="Добавим нового пользователя? :"
+#local polzovatel
+#    select polzovatel in Да Нет
+#    do
+#                case $polzovatel in
+#                Да)
+#                   echo -e "Напиши название пользователя: \n"
+#                    read polzovatel
+#                    new_polzovatel="$polzovatel"
+#                    eval sudo adduser "$new_polzovatel"
+#                    Add_New_User
+#                    ;;
+#                Нет)
+#                    echo "Новый пользователь не будет добавлен"
+#                    break
+#                    ;;
+#                *)
+#                    echo "Повтори еще раз"
+#                    ;;
+#                esac
+#done
+#echo "Добавлен новый пользователь: $new_polzovatel"
+#}
+#Add_New_User
+
+function Add_New_User {
+    PS3="Добавим нового пользователя? :"
+    local users=()  # Массив для хранения имен пользователей
+    while true; do
+        select choice in Да Нет; do
+            case $choice in
+                Да)
+                    echo -e "Напиши название пользователя: \n"
+                    read user
+                    users+=("$user")  # Добавляем пользователя в массив
+                    eval sudo adduser "$user"
+                    break
+                    ;;
+                Нет)
+                    echo "Новый пользователь не будет добавлен"
+                    # Выводим всех добавленных пользователей
+                    echo "Добавленные пользователи: ${users[@]}"
+                    return
+                    ;;
+                *)
+                    echo "Повтори еще раз"
+                    ;;
+            esac
+        done
+    done
+}
+
+Add_New_User
+
+
+#function Add_Sudo_Privileges {
+    # Получаем список всех пользователей
+#    users=($(getent passwd | cut -d: -f1))
+#
+#    PS3="Выберите пользователя, которому нужно дать права sudo: "
+#
+#    select user in "${users[@]}"; do
+#        if [[ -n "$user" ]]; then
+#            # Добавляем пользователя в группу sudo
+#            sudo usermod -aG sudo "$user"
+#            echo "Пользователь $user добавлен в группу sudo."
+#            break
+#        else
+#            echo "Неправильный выбор. Попробуйте еще раз."
+#        fi
+#    done
+#}
+
+#Add_Sudo_Privileges
+
+function Add_Sudo_Privileges {
+    while true; do
+        # Получаем список всех пользователей
+        users=($(getent passwd | cut -d: -f1))
+        users+=("Выход")  # Добавляем опцию "Выход" в конец списка
+
+
+
+#Объяснение изменений:
+#shopt -s nocasematch и shopt -u nocasematch: Включение и отключение опции #nocasematch, чтобы сделать проверку в case нечувствительной к регистру.
+#Упрощенная проверка case: Упрощение проверки case, чтобы учитывать только #"да" и "yes" в любом регистре.
+#Теперь, независимо от того, вводите ли вы "Да", "да", "Yes" или "yes", скрипт #должен продолжать работу. В любом другом случае он завершит выполнение.
+
+
+        PS3="Выберите пользователя, которому нужно дать права sudo: "
+
+        select user in "${users[@]}"; do
+            if [[ "$user" == "Выход" ]]; then
+                echo "Вы вышли и не хотите добавить пользователя в sudo"
+                return  # Завершение функции
+            elif [[ -n "$user" ]]; then
+                # Добавляем пользователя в группу sudo
+                sudo usermod -aG sudo "$user"
+                echo "Пользователь $user добавлен в группу sudo."
+                break
+            else
+                echo "Неправильный выбор. Попробуйте еще раз."
+            fi
+
+        done
+
+        # Спрашиваем, нужно ли добавить еще одного пользователя
+        read -p "Хотите добавить еще одного пользователя в группу sudo? (Да/Нет): " answer
+        shopt -s nocasematch
+        case $answer in
+            да|yes)
+                continue
+                ;;
+            *)
+                echo "Выход из скрипта."
+                break
+                ;;
+        esac
+        shopt -u nocasematch
+    done
+}
+
+Add_Sudo_Privileges
+
+
+function Edit_SSH_Config_Port {
+    PS3="Какой порт предпочитаете использовать? :"
+    select port_server_number in 'Стандартный - 22' Кастомный; do
+        case $port_server_number in
+            'Стандартный - 22')
+                port_server_number_ok="22"
+                echo "Вы выбрали 22 порт"
+                break
+                ;;
+            Кастомный)
+                echo "Введите номер порта:"
+                read port_server_number_ok
+                if ! [[ $port_server_number_ok =~ ^[0-9]+$ ]] || (( $port_server_number_ok < 1 || $port_server_number_ok > 65535 )); then
+                    echo "Недопустимый порт. Попробуйте еще раз."
+                    continue
+                fi
+
+                # Замена строки с новым номером порта
+                #sudo sed -i "s/^#Port [0-9]*/Port $port_server_number_ok/" /etc/ssh/sshd_config
+                #sudo sed -i "s/^Port [0-9]*/Port $port_server_number_ok/" /etc/ssh/sshd_config
+                #Можно сделать как выше, так тоже будет работать
+                sudo sed -i "/^#Port [0-9]*/c\Port $port_server_number_ok" /etc/ssh/sshd_config
+
+                echo "Порт изменен на $port_server_number_ok"
+                while true; do
+                    read -p "Сохранить данный порт?: (да/нет)" answer_port_1
+                    shopt -s nocasematch
+
+
+
+
+                        #Другой вариант реализации:
+                        #if [[ $answer_port_1 =~ ^(да|yes|нуа|lf)$ ]]; then
+                            #echo "Порт не изменится: $port_server_number_ok"
+                            #shopt -u nocasematch
+                            #break 2 # Выходим из обоих циклов
+                        #elif [[ $answer_port_1 =~ ^(нет|no|тщ|ytn)$ ]]; then
+                            #read -p "Напишите, какой порт хотите использовать: " answer_port_2
+                            #if ! [[ $answer_port_2 =~ ^[0-9]+$ ]] || (( $answer_port_2 < 1 || $answer_port_2 > 65535 )); then
+                                #echo "Недопустимый порт. Попробуйте еще раз."
+                                #continue
+                            #fi
+
+                            #sudo sed -i "/^Port [0-9]*/c\Port $answer_port_2" /etc/ssh/sshd_config
+                            #echo "Вы выбрали порт: $answer_port_2"
+                            #shopt -u nocasematch
+                            #break 2 # Выходим из обоих циклов
+                        #else
+                            #echo "Недопустимый выбор. Повторите еще раз."
+                        #fi
+                    #done
+                    #;;
+
+
+
+
+                    case $answer_port_1 in
+                        да|yes|нуа|lf)
+                            echo "Порт не изменится - $port_server_number_ok"
+                            shopt -u nocasematch
+                            return
+                            ;;
+                        нет|no|тщ|ytn)
+                            read -p "Напишите какой порт хочешь использовать: " answer_port_2
+                            if ! [[ $answer_port_2 =~ ^[0-9]+$ ]] || (( $port_server_number_ok < 1 || $port_server_number_ok > 65535 )); then
+                                echo "Недопустимый порт. Попробуйте еще раз."
+                                continue
+                            fi
+                            sudo sed -i "/^Port [0-9]*/c\Port $answer_port_2" /etc/ssh/sshd_config
+                            echo "Вы выбрали порт: $answer_port_2"
+                            shopt -u nocasematch
+                            return
+                            ;;
+                        *)
+                            echo "Повтори еще раз"
+                            ;;
+
+                    esac
+                    shopt -u nocasematch
+                done
+                ;;
+            *)
+                echo "Недопустимый выбор. Повтори еще раз"
+                ;;
+        esac
+        echo "Вы выбрали порт: $port_server_number_ok"
+    done
+}
+
+Edit_SSH_Config_Port
+
+
+
+#forward=$(sudo sed -i '/^#LoginGraceTime /c\LoginGraceTime ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PermitRootLogin prohibit-password /c\PermitRootLogin prohibit-password ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#MaxAuthTries /c\MaxAuthTries ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#MaxSessions /c\MaxSessions ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PubkeyAuthentication /c\PubkeyAuthentication ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PasswordAuthentication /c\PasswordAuthentication ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PermitEmptyPasswords /c\PermitEmptyPasswords ' /etc/ssh/sshd_config)
+#echo "AllowUsers " > /etc/ssh/sshd_config
 
 
 
