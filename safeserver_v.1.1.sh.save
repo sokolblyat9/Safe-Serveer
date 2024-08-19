@@ -1,0 +1,891 @@
+#!/bin/bash
+
+# Определение цветов текста и фона
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+WHITE='\033[0;37m'
+RESET='\033[0m' # Сброс всех атрибутов
+
+
+# Примеры использования цветов
+echo -e "================================================================================================================================================"
+echo -e "||" "${WHITE}ooooooooo.     .oooooo.   oooooo   oooooo     oooo oooooooooooo ooooooooo.   oooooooooooo oooooooooo.         oooooooooo.  oooooo   oooo  " "||"
+echo -e "||" "${WHITE}\`888   \`Y88.  d8P'  \`Y8b   \`888.    \`888.     .8'  \`888'     \`8 \`888   \`Y88. \`888'     \`8 \`888'   \`Y8b        \`888'   \`Y8b  \`888.   .8'" "   ||"
+echo -e "||" "${BLUE} 888   .d88' 888      888   \`888.   .8888.   .8'    888          888   .d88'  888          888      888        888     888   \`888. .8'    " "||"
+echo -e "||" "${BLUE} 888ooo88P'  888      888    \`888  .8'\`888. .8'     888oooo8     888ooo88P'   888oooo8     888      888        888oooo888'    \`888.8'    " " ||"
+echo -e "||" "${RES} 888         888      888     \`888.8'  \`888.8'      888    \"     888\`88b.     888    \"     888      888        888    \`88b     \`888'  " "    ||"
+echo -e "||" "${RED} 888         \`88b    d88'      \`888'    \`888'       888       o  888  \`88b.   888       o  888     d88'        888    .88P      888      " " ||"
+echo -e "||" "${RED}o888o         \`Y8bood8P'        \`8'      \`8'       o888ooooood8 o888o  o888o o888ooooood8 o888bood8P'         o888bood8P'      o888o      " "||"
+echo "||" "                                                                                                                                           ||"
+echo -e "||" "${WHITE} .oooooo..o   .oooooo.   oooo    oooo   .oooooo.   ooooo             oooooooooo.  ooooo        oooooo   oooo       .o.       oooooooooo. " " ||"
+echo -e "||" "${WHITE}d8P'    \`Y8  d8P'  \`Y8b  \`888   .8P'   d8P'  \`Y8b  \`888'             \`888'   \`Y8b \`888'         \`888.   .8'       .888.      \`888'   \`Y8b" " ||"
+echo -e "||" "${BLUE}Y88bo.      888      888  888  d8'    888      888  888               888     888  888           \`888. .8'       .8\"888.      888      888" "||"
+echo -e "||" "${BLUE} \`\"Y8888o.  888      888  88888[      888      888  888               888oooo888'  888            \`888.8'       .8' \`888.     888      888" "||"
+echo -e "||" "${BLUE}     \`\"Y88b 888      888  888\`88b.    888      888  888               888    \`88b  888             \`888'       .88ooo8888.    888      888" "||"
+echo -e "||" "${RED}oo     .d8P \`88b    d88'  888  \`88b.  \`88b    d88'  888       o       888    .88P  888       o      888       .8'     \`888.   888     d88'" "||"
+echo -e "||" "${RED}8\"\"88888P'   \`Y8bood8P'  o888o  o888o  \`Y8bood8P'  o888ooooood8      o888bood8P'  o888ooooood8     o888o     o88o     o8888o o888bood8P'" "  ||"
+echo -e "================================================================================================================================================"
+echo -e "${RESET}"
+
+
+
+
+
+
+
+function Ystanovka_Expect {
+echo "Проверим, установлена ли у тебя утилита expect"
+#eval "expetc -v"
+command1=eval expect -v
+echo "$command1"
+if [[ $command1=="*команда не найдена*" ]]; then
+    echo "Установим утилиту, так как она нам будет нужна для автоматизации подстановки пароля"
+    os_info=$(lsb_release -a)
+        if [[ $os_info == *"CentOS"* || $os_info == *"Fedora"* ]]; then
+            yum update
+            yum install expect
+        elif
+            [[ $os_info == *"Debian"* || $os_info == *"Ubuntu"* ]]; then
+            sudo apt update && sudo apt upgrade -y
+            sudo apt install expect
+        else
+            echo "Вы пользуетесь MacOS"
+        fi
+else
+    echo "expect установлена"
+fi
+}
+Ystanovka_Expect
+
+
+
+function SSH_KEYGEN {
+echo "Введем путь для хранения ключей (или нажмите Enter для использования дефолтного пути): "
+read path_to_keys_server
+path_to_keys_server_per="$path_to_keys_server"
+
+if [[ -z "$path_to_keys_server_per" ]]; then
+    path_to_keys_server_per="$HOME/.ssh/id_rsa"
+fi
+echo "Создадим пару ключей"
+ssh-keygen -f "$path_to_keys_server_per" -b 4096
+}
+SSH_KEYGEN
+
+
+
+
+function login_server {
+echo "Напишите какой логин у сервера"
+read login_key
+login_key_server="$login_key"
+}
+login_server
+
+
+function password_server {
+echo "Напишите какой пароль у сервера"
+read password_key
+password_key_server="$password_key"
+}
+password_server
+
+
+function ip_address {
+echo "Напишите какой ip адрес сервера"
+read ip_address
+ip_address_server="$ip_address"
+}
+ip_address
+
+
+function Port_Server {
+PS3="Какой порт у твоего сервера? :"
+local port_s
+select port_s in 22 Кастомный
+do
+                case $port_s in
+                22)
+                    port_server_key="22"
+                        echo "Вы выбрали порт сервера - $port_server_key"
+                        break
+                        ;;
+                Кастомный)
+                    echo "Введите номер порта"
+                    read port_klava
+                    port_server_key=$port_klava
+                        echo "Вы выбрали порт сервера - $port_server_key"
+                        break
+                        ;;
+                *)
+                        echo "Недопустимый выбор"
+                        ;;
+                esac
+done
+echo "Выбранный порт: $port_server_key"
+}
+Port_Server
+
+
+function copy_key_to_server {
+echo "Скопируем публичный ключ на сервер"
+    if [[ $port_server_key -eq 22 ]]; then
+        #ssh-copy-id -i "$path_to_keys_server_per" "$login_key_server@$ip_address_server"
+        expect -c "
+        spawn ssh-copy-id -i \"$path_to_keys_server_per\" $login_key_server@$ip_address_server
+        expect {
+            \"*password:\" { send \"$password_key_server\r\" }
+        }
+        interact
+        "
+    else
+        #ssh-copy-id -i "$path_to_keys_server_per" -P "$port_server_key $login_key_server@$ip_address_server"
+        expect -c "
+        spawn ssh-copy-id -i \"$path_to_keys_server_per\" -oPort=$port_server_key $login_key_server@$ip_address_server
+        expect {
+            \"*password:\" { send \"$password_key_server\r\" }
+        }
+        interact
+        "
+    fi
+}
+copy_key_to_server
+
+
+
+
+
+
+
+
+
+
+function automatic_password {
+    expect -c "
+    spawn ssh -p $port_server_key $login_key_server@$ip_address_server
+    expect {
+        \"*yes/no\" { send \"yes\r\"; exp_continue }
+        \"*password:\" { send \"$password_key_server\r\" }
+    }
+    interact
+    "
+}
+automatic_password
+
+
+
+
+
+
+function Update_and_Upgarde_Remote_Server {
+echo "Обновим пакеты на сервере, но сначала узнаем какую операционную систему ты используешь"
+os_info=$(lsb_release -a)
+    if [[ $os_info == *"CentOS"* || $os_info == *"Fedora"* ]]; then
+        yum update
+    elif
+        [[ $os_info == *"Debian"* || $os_info == *"Ubuntu"* ]]; then
+        sudo apt update && sudo apt upgrade -y
+    else
+        echo "Вы пользуетесь MacOS"
+    fi
+}
+Update_and_Upgarde_Remote_Server
+
+
+#function Add_New_User {
+#PS3="Добавим нового пользователя? :"
+#local polzovatel
+#    select polzovatel in Да Нет
+#    do
+#                case $polzovatel in
+#                Да)
+#                   echo -e "Напиши название пользователя: \n"
+#                    read polzovatel
+#                    new_polzovatel="$polzovatel"
+#                    eval sudo adduser "$new_polzovatel"
+#                    Add_New_User
+#                    ;;
+#                Нет)
+#                    echo "Новый пользователь не будет добавлен"
+#                    break
+#                    ;;
+#                *)
+#                    echo "Повтори еще раз"
+#                    ;;
+#                esac
+#done
+#echo "Добавлен новый пользователь: $new_polzovatel"
+#}
+#Add_New_User
+
+function Add_New_User {
+    PS3="Добавим нового пользователя? :"
+    local users=()  # Массив для хранения имен пользователей
+    while true; do
+        select choice in Да Нет; do
+            case $choice in
+                Да)
+                    echo -e "Напиши название пользователя: \n"
+                    read user
+                    users+=("$user")  # Добавляем пользователя в массив
+                    eval sudo adduser "$user"
+                    break
+                    ;;
+                Нет)
+                    echo "Новый пользователь не будет добавлен"
+                    # Выводим всех добавленных пользователей
+                    echo "Добавленные пользователи: ${users[@]}"
+                    return
+                    ;;
+                *)
+                    echo "Повтори еще раз"
+                    ;;
+            esac
+        done
+    done
+}
+
+Add_New_User
+
+
+#function Add_Sudo_Privileges {
+    # Получаем список всех пользователей
+#    users=($(getent passwd | cut -d: -f1))
+#
+#    PS3="Выберите пользователя, которому нужно дать права sudo: "
+#
+#    select user in "${users[@]}"; do
+#        if [[ -n "$user" ]]; then
+#            # Добавляем пользователя в группу sudo
+#            sudo usermod -aG sudo "$user"
+#            echo "Пользователь $user добавлен в группу sudo."
+#            break
+#        else
+#            echo "Неправильный выбор. Попробуйте еще раз."
+#        fi
+#    done
+#}
+
+#Add_Sudo_Privileges
+
+function Add_Sudo_Privileges {
+    while true; do
+        # Получаем список всех пользователей
+        users=($(getent passwd | cut -d: -f1))
+        users+=("Выход")  # Добавляем опцию "Выход" в конец списка
+
+
+
+#Объяснение изменений:
+#shopt -s nocasematch и shopt -u nocasematch: Включение и отключение опции #nocasematch, чтобы сделать проверку в case нечувствительной к регистру.
+#Упрощенная проверка case: Упрощение проверки case, чтобы учитывать только #"да" и "yes" в любом регистре.
+#Теперь, независимо от того, вводите ли вы "Да", "да", "Yes" или "yes", скрипт #должен продолжать работу. В любом другом случае он завершит выполнение.
+
+
+        PS3="Выберите пользователя, которому нужно дать права sudo: "
+
+        select user in "${users[@]}"; do
+            if [[ "$user" == "Выход" ]]; then
+                echo "Вы вышли и не хотите добавить пользователя в sudo"
+                return  # Завершение функции
+            elif [[ -n "$user" ]]; then
+                # Добавляем пользователя в группу sudo
+                sudo usermod -aG sudo "$user"
+                echo "Пользователь $user добавлен в группу sudo."
+                break
+            else
+                echo "Неправильный выбор. Попробуйте еще раз."
+            fi
+
+        done
+
+        # Спрашиваем, нужно ли добавить еще одного пользователя
+        read -p "Хотите добавить еще одного пользователя в группу sudo? (Да/Нет): " answer
+        shopt -s nocasematch
+        case $answer in
+            да|yes)
+                continue
+                ;;
+            *)
+                echo "Выход из скрипта."
+                break
+                ;;
+        esac
+        shopt -u nocasematch
+    done
+}
+
+Add_Sudo_Privileges
+
+
+function Edit_SSH_Config_Port {
+    PS3="Какой порт предпочитаете использовать? :"
+    select port_server_number in 'Стандартный - 22' Кастомный; do
+        case $port_server_number in
+            'Стандартный - 22')
+                port_server_number_ok="22"
+                echo "Вы выбрали 22 порт"
+                break
+                ;;
+            Кастомный)
+                echo "Введите номер порта:"
+                read port_server_number_ok
+                if ! [[ $port_server_number_ok =~ ^[0-9]+$ ]] || (( $port_server_number_ok < 1 || $port_server_number_ok > 65535 )); then
+                    echo "Недопустимый порт. Попробуйте еще раз."
+                    continue
+                fi
+
+                # Замена строки с новым номером порта
+                #sudo sed -i "s/^#Port [0-9]*/Port $port_server_number_ok/" /etc/ssh/sshd_config
+                #sudo sed -i "s/^Port [0-9]*/Port $port_server_number_ok/" /etc/ssh/sshd_config
+                #Можно сделать как выше, так тоже будет работать
+                sudo sed -i "/^#Port [0-9]*/c\Port $port_server_number_ok" /etc/ssh/sshd_config
+
+                echo "Порт изменен на $port_server_number_ok"
+                while true; do
+                    read -p "Сохранить данный порт?: (да/нет)" answer_port_1
+                    shopt -s nocasematch
+
+
+
+
+                        #Другой вариант реализации:
+                        #if [[ $answer_port_1 =~ ^(да|yes|нуа|lf)$ ]]; then
+                            #echo "Порт не изменится: $port_server_number_ok"
+                            #shopt -u nocasematch
+                            #break 2 # Выходим из обоих циклов
+                        #elif [[ $answer_port_1 =~ ^(нет|no|тщ|ytn)$ ]]; then
+                            #read -p "Напишите, какой порт хотите использовать: " answer_port_2
+                            #if ! [[ $answer_port_2 =~ ^[0-9]+$ ]] || (( $answer_port_2 < 1 || $answer_port_2 > 65535 )); then
+                                #echo "Недопустимый порт. Попробуйте еще раз."
+                                #continue
+                            #fi
+
+                            #sudo sed -i "/^Port [0-9]*/c\Port $answer_port_2" /etc/ssh/sshd_config
+                            #echo "Вы выбрали порт: $answer_port_2"
+                            #shopt -u nocasematch
+                            #break 2 # Выходим из обоих циклов
+                        #else
+                            #echo "Недопустимый выбор. Повторите еще раз."
+                        #fi
+                    #done
+                    #;;
+
+
+
+
+                    case $answer_port_1 in
+                        да|yes|нуа|lf)
+                            echo "Порт не изменится - $port_server_number_ok"
+                            shopt -u nocasematch
+                            return
+                            ;;
+                        нет|no|тщ|ytn)
+                            read -p "Напишите какой порт хочешь использовать: " answer_port_2
+                            if ! [[ $answer_port_2 =~ ^[0-9]+$ ]] || (( $port_server_number_ok < 1 || $port_server_number_ok > 65535 )); then
+                                echo "Недопустимый порт. Попробуйте еще раз."
+                                continue
+                            fi
+                            sudo sed -i "/^Port [0-9]*/c\Port $answer_port_2" /etc/ssh/sshd_config
+                            echo "Вы выбрали порт: $answer_port_2"
+                            shopt -u nocasematch
+                            return
+                            ;;
+                        *)
+                            echo "Повтори еще раз"
+                            ;;
+
+                    esac
+                    shopt -u nocasematch
+                done
+                ;;
+            *)
+                echo "Недопустимый выбор. Повтори еще раз"
+                ;;
+        esac
+        echo "Вы выбрали порт: $port_server_number_ok"
+    done
+}
+
+Edit_SSH_Config_Port
+
+
+function LoginGraceTime {
+PS3="Выберите в минутах либо секундах, которое хотите дать пользователю для прохождения аутентификации для подключения к серверу: "
+    local vybor
+        select vybor in Минуты Секунды; do
+            case $vybor in
+                Минуты)
+                    printf "Выбери сколько тебе нужно время в минутах. \nВыбрать можно от 1 до 60 минуты: "
+
+
+                    #Особенности printf
+                    #Форматирование вывода:
+                        #printf позволяет форматировать строку вывода, используя спецификаторы формата, такие как %s, %d, %f и другие.
+                        #%s - Строка (String):
+                            #Используется для вывода строковых значений.
+                            #Принимает строку и вставляет её в указанное место в строке формата.
+                        #%d - Целое число (Integer):
+                            #Используется для вывода целых чисел.
+                            #Принимает целое число и вставляет его в указанное место в строке формата.
+                        #%f - Число с плавающей точкой (Floating-point):
+                            #Используется для вывода чисел с плавающей точкой.
+                            #Принимает число с плавающей точкой и вставляет его в указанное место в строке формата.
+
+                            #ПРИМЕР:
+                            # Вывод таблицы с выравниванием
+                            #printf "%-10s %-10s %-10s\n" "Имя" "Возраст" "Рост"
+                            #printf "%-10s %-10d %-10.1f\n" "Alice" 30 165.5
+                            #printf "%-10s %-10d %-10.1f\n" "Bob" 25 180.2
+                            #printf "%-10s %-10d %-10.1f\n" "Charlie" 35 175.0
+
+                            #В ЭТОМ ПРИМЕРЕ:
+                                #%10s указывает на строку шириной 10 символов, выровненную по правому краю.
+                                #%-10s указывает на строку шириной 10 символов, выровненную по левому краю.
+                                #%10.1f указывает на число с плавающей точкой шириной 10 символов с одной цифрой после десятичной точки, выровненное по правому краю.
+
+                    #Консистентное поведение:
+                        #printf имеет предсказуемое и консистентное поведение, не зависящее от оболочки, в отличие от echo, который может работать по-разному в разных оболочках.
+
+                    #Управляющие последовательности:
+                        #printf всегда интерпретирует управляющие последовательности, такие как \n для новой строки, \t для табуляции и т.д.
+
+                    #Отсутствие автоматической новой строки:
+                        #В отличие от echo, который по умолчанию добавляет новую строку в конце вывода, printf этого не делает. Это дает больше контроля над тем, как и когда добавлять новые строки.
+
+                    read login_grace_time
+                    if [[ $login_grace_time -gt 0 && $login_grace_time -lt 61 ]]; then
+                        sudo sed -i "/^#LoginGraceTime [0-9]*/c\LoginGraceTime ${login_grace_time}m" /etc/ssh/sshd_config
+                        echo "Вы выбрали для пункта меню LoginGraceTime - $login_grace_time минут."
+                        break
+                    else
+                        echo "Вы выбрали не правильный вариант"
+                    fi
+                    ;;
+                Секунды)
+                    printf "Выбери сколько тебе нужно время в секундах. \nВыбрать можно от 1 до 120 секунд: "
+                    read login_grace_time
+                    if [[ $login_grace_time -gt 0 || $login_grace_time -lt 3601 ]]; then
+                        sudo sed -i "/^#LoginGraceTime [0-9]*/c\LoginGraceTime ${login_grace_time}s" /etc/ssh/sshd_config
+                        break
+                        echo "Вы выбрали для пункта меню LoginGraceTime - $login_grace_time секунд."
+                    else
+                        echo "Вы выбрали не правильный вариант"
+                    fi
+                    ;;
+                *)
+                    echo "Повтори еще раз"
+                    ;;
+            esac
+        done
+
+}
+LoginGraceTime
+
+
+
+function PepmitRootLogin {
+PS3="Выберите пункт меню настройки защиты ssh сервера для root пользователя: "
+local vybor
+select vybor in yes no prohibit-password forced-commands-only
+do
+    case $vybor in
+        Yes)
+            sudo sed -i "/^#PermitRootLogin */c\PermitRootLogin yes" /etc/ssh/sshd_config
+            break
+            ;;
+        No)
+            sudo sed -i "/^#PermitRootLogin */c\PermitRootLogin no" /etc/ssh/sshd_config
+            break
+            ;;
+        Prohibit-password)
+            sudo sed -i "/^#PermitRootLogin */c\PermitRootLogin prohibit-password" /etc/ssh/sshd_config
+            break
+            ;;
+        Forced-commands-only)
+            sudo sed -i "/^#PermitRootLogin */c\PermitRootLogin forced-commands-only" /etc/ssh/sshd_config
+            break
+            ;;
+        *)
+            echo "Повторите еще раз"
+            ;;
+
+}
+PermitRootLogin
+
+function MaxAuthTries {
+read -p "Сколько попыток дать для подключения в одной сессии подключения (MaxAuthTries)?:  " kolichestvo_1
+if [[ $kolichestvo_1 =~ ^[1-9][0-9]*$ ]]; then
+	echo "Всего попыток для подключения в одной сессии - $kolichestvo_1"
+	sudo sed -i "/^#MaxAuthTries [0-9]*/c\MaxAuthTries $kolichestvo_1" /etc/ssh/sshd_config
+	printf "Введенное количество для подключения в одной сессии: $kolichestvo_1\nСохранить введенное количество для подключения?  (Да/Нет): "
+	while true; do
+		local otvet
+		read otvet
+		shopt -s nocasematch
+		case $otvet in
+			да|yes|нуа|lf)
+				echo "Максимальное количество попыток для подключения в одной сессии не изменится - $kolichestvo_1"
+				shopt -u nocasematch
+				return
+				;;
+			нет|no|тщ|ytn)
+				while true; do
+					read -p "Напишите сколько хотите попыток иметь для подключения?: " kolichestvo_2
+					if [[ $kolichestvo_2 =~ ^[1-9][0-9]*$ ]]; then
+						sudo sed -i "/^MaxAuthTries /c\MaxAuthTries $kolichestvo_2" /etc/ssh/sshd_config
+						echo "Вы выбрали $kolichestvo_2 попыток для подключения"
+						shopt -u nocasematch
+						return
+					else
+						echo "Вы ввели не правильное количество"
+					fi
+				done
+				;;
+			*)
+				echo "Повтори еще раз.Сохранить введенное количество для подключения?  (Да/Нет):  "
+				;;
+
+		esac
+		shopt -u nocasematch
+	done
+else
+	echo "Попробуйте еще раз"
+	MaxAuthTries
+fi
+}
+MaxAuthTries
+
+
+function MaxSessions {
+read -p "Сколько установить максимальное количество одновременных открытых сессий, разрешенных через одно SSH-подключениея (MaxSessions)?:  " kolichestvo_1
+if [[ $kolichestvo_1 =~ ^[1-9][0-9]*$ ]]; then
+	echo "Всего попыток для подключения в одной сессии - $kolichestvo_1"
+	sudo sed -i "/^#MaxSessions [0-9]*/c\MaxSessions $kolichestvo_1" /etc/ssh/sshd_config
+	printf "Введенное количество для подключения в одной сессии: $kolichestvo_1\nСохранить введенное количество для подключения?  (Да/Нет): "
+	while true; do
+		local otvet
+		read otvet
+		shopt -s nocasematch
+		case $otvet in
+			да|yes|нуа|lf)
+				echo "Максимальное количество попыток для подключения в одной сессии не изменится - $kolichestvo_1"
+				shopt -u nocasematch
+				return
+				;;
+			нет|no|тщ|ytn)
+				while true; do
+					read -p "Напишите сколько хотите попыток иметь для подключения?: " kolichestvo_2
+					if [[ $kolichestvo_2 =~ ^[1-9][0-9]*$ ]]; then
+						sudo sed -i "/^MaxSessions /c\MaxSessions $kolichestvo_2" /etc/ssh/sshd_config
+						echo "Вы выбрали $kolichestvo_2 попыток для подключения"
+						shopt -u nocasematch
+						return
+					else
+						echo "Вы ввели не правильное количество"
+					fi
+				done
+				;;
+			*)
+				echo "Повтори еще раз.Сохранить введенное количество для подключения?  (Да/Нет):  "
+				;;
+
+		esac
+		shopt -u nocasematch
+	done
+else
+	echo "Попробуйте еще раз"
+	MaxSessions
+}
+MaxSessions
+
+
+function PubkeyAuthentication {
+PS3="Какое значение хочешь выставить для PubkeyAuthentication? :  "
+local otvet
+select otvet in Yes No; do
+    case $otvet in
+        Yes)
+            sudo sed -i "/^#PubkeyAuthentication */c\PubkeyAuthentication yes" /etc/ssh/sshd_config
+            echo "Для параметра PubkeyAuthentication выставлен параметр yes"
+            break
+            ;;
+        No)
+            sudo sed -i "/^#PubkeyAuthentication */c\PubkeyAuthentication no" /etc/ssh/sshd_config
+            echo "Для параметра PubkeyAuthentication выставлен параметр no"
+            break
+            ;;
+        *)
+            echo "Повтори еще раз"
+            ;;
+    esac
+done
+}
+PubkeyAuthentication
+
+
+function PasswordAuthentication {
+PS3="Какое значение хочешь выставить для PubkeyAuthentication? :  "
+local otvet
+select otvet in Yes No; do
+    case $otvet in
+        Yes)
+            sudo sed -i "/^#PasswordAuthentication */c\PasswordAuthentication yes" /etc/ssh/sshd_config
+            echo "Для параметра PubkeyAuthentication выставлен параметр yes"
+            break
+            ;;
+        No)
+            sudo sed -i "/^#PasswordAuthentication */c\PasswordAuthentication no" /etc/ssh/sshd_config
+            echo "Для параметра PubkeyAuthentication выставлен параметр no"
+            break
+            ;;
+        *)
+            echo "Повтори еще раз"
+            ;;
+    esac
+done
+}
+PasswordAuthentication
+
+function PermitEmptyPasswords {
+PS3="Какое значение хочешь выставить для PermitEmptyPasswords? :  "
+local otvet
+select otvet in Yes No; do
+    case $otvet in
+        Yes)
+            sudo sed -i "/^#PermitEmptyPasswords */c\PermitEmptyPasswords yes" /etc/ssh/sshd_config
+            echo -e "Для параметра PubkeyAuthentication выставлен параметр yes \e[31m <- Это может быть не безопасно!!!\e[0m\n"
+                while true; do
+                    local kontrolniy_otvet
+                    PS3="Вы уверены что хотите сохранить данный выбор? :  "
+                    select kontrolniy_otvet in Да Нет; do
+                        case $kontrolniy_otvet in
+                            Да)
+                                echo "Хорошо. Я сохраню ваш выбор. Для параметра PubkeyAuthentication выставлен параметр yes"
+                                return
+                                ;;
+                            Нет)
+                                while true; do
+                                    PS3="Выберите какую установку хотите дать для PermitEmptyPasswords? :  "
+                                    local new_otvet
+                                    select new_otvet in Yes No; do
+                                        case $new_otvet in
+                                            Yes)
+                                                sudo sed -i "/^PermitEmptyPasswords */c\PermitEmptyPasswords yes" /etc/ssh/sshd_config
+                                                echo -e "Для параметра PubkeyAuthentication выставлен параметр yes \e[31m <- Это может быть не безопасно!!!\e[0m\n"
+                                                # <- Это может быть не безопасно - подчеркивается красным цветом
+                                                return
+                                                ;;
+                                            No)
+                                                sudo sed -i "/^PermitEmptyPasswords */c\PermitEmptyPasswords no" /etc/ssh/sshd_config
+                                                echo "Для параметра PermitEmptyPasswords выставлен параметр no"
+                                                return
+                                                ;;
+                                            *)
+                                                echo "Повтори еще раз."
+                                                ;;
+                                        esac
+                                    done
+                                done
+                                ;;
+
+                            *)
+                                echo "Повтори еще раз"
+                                ;;
+                        esac
+                    done
+                done
+            ;;
+        No)
+            sudo sed -i "/^#PermitEmptyPasswords */c\PermitEmptyPasswords no" /etc/ssh/sshd_config
+            echo "Для параметра PubkeyAuthentication выставлен параметр no"
+            break
+            ;;
+        *)
+            echo "Повтори еще раз."
+            ;;
+    esacdone
+}
+PermitEmptyPasswords
+
+
+function AllowUsers {
+PS3="Хочешь сделать ограничение для подключения к серверу пользователям? :  "
+local otvet
+select otvet in Да Нет;do
+    case $otvet in
+        Да)
+            while true; do
+            PS3="Выбери какое ограничение для подключения к серверу хочешь сделать для пользователя: "
+            local variant
+            select variant 'Разрешить подключение 1 пользователю с любого IP-адреса' 'Разрешить подключение 1 пользователю с конкретного IP-адреса' 'Разрешить подключение 1 пользователю с любого диапазона IP-адресов' 'Разрешить подключение 1 пользователю с конкретного диапазона IP-адресов' 'Разрешить подключение нескольким пользователям с любого IP-адреса' 'Разрешить подключение нескольким пользователям с конкретного IP-адреса' 'Разрешить подключение нескольким пользователям с любого диапазона IP-адресов' 'Разрешить подключение нескольким пользователям с конкретного диапазона IP-адресов'
+            case $variant in
+                'Разрешить подключение 1 пользователю с любого IP-адреса')
+                while true; do
+                # Получаем список всех пользователей
+                users=($(awk -F: '{ print $1 }' /etc/passwd))
+                PS3="Выберите пользователя, которому хочешь дать разрешение на подключение к серверу с любым ip-адресом:  "
+                select user in "${users[@]}"; do
+                    if [[ -n "$user" ]]; then
+                        echo "AllowUsers $user" >> /etc/ssh/sshd_config
+                        return
+                    else
+                        echo "Неправильный выбор. Попробуйте еще раз."
+                    fi
+
+                done
+                done
+                ;;
+
+                'Разрешить подключение 1 пользователю с конкретного IP-адреса')
+                read -p "С какого ip-адреса хочешь дать возможность подключаться пользователю к серверу?" ip_address_authentifications
+                while true; do
+                # Получаем список всех пользователей
+                users=($(awk -F: '{ print $1 }' /etc/passwd))
+                PS3="Выберите пользователя, которому хочешь дать разрешение на подключение к серверу c определенным ip-адресом:  "
+                select user in "${users[@]}"; do
+                    if [[ -n "$user" ]]; then
+                        echo -e "AllowUsers $user@$ip_address_authentifications " >> /etc/ssh/sshd_config
+                        return
+                    else
+                        echo "Неправильный выбор. Попробуйте еще раз."
+                    fi
+
+                done
+                done
+                ;;
+
+                #'Разрешить подключение 1 пользователю с любого диапазона IP-адресов')
+
+
+                'Разрешить подключение 1 пользователю с конкретного диапазона IP-адресов')
+                echo -e "192.168.0.*   <- такой формат\n192.168.0.3/25   <- такой формат"
+                read -p "С какого диапазона ip-адресов хочешь дать возможность подключаться пользователю к серверу:  " diapazon_ip_address
+                while true; do
+                # Получаем список всех пользователей
+                users=($(awk -F: '{ print $1 }' /etc/passwd))
+                PS3="Выберите пользователя, которому хочешь дать разрешение на подключение к серверу c определенным ip-адресом:  "
+                select user in "${users[@]}"; do
+                    if [[ -n "$user" ]]; then
+                        echo -e "AllowUsers $user@$diapazon_ip_address " >> /etc/ssh/sshd_config
+                        return
+                    else
+                        echo "Неправильный выбор. Попробуйте еще раз."
+                    fi
+
+                done
+                done
+                ;;
+
+
+                'Разрешить подключение нескольким пользователям с любого IP-адреса')
+                while true; do
+                # Получаем список всех пользователей
+                users=($(awk -F: '{ print $1 }' /etc/passwd))
+                local dop_polzovatels=()  # Массив для хранения имен пользователей
+                PS3="Выберите пользователя, которому хочешь дать разрешение на подключение к серверу с любым ip-адресом:  "
+                select user_1 in "${users[@]}"; do
+                    if [[ "$user_1" == "Выход" ]]; then
+                        echo "Вы вышли и не хотите добавить пользователя в sudo"
+                        return  # Завершение функции
+                    elif [[ -n "$user_1" ]]; then
+                        echo "AllowUsers $user_1" >> /etc/ssh/sshd_config
+                        dop_polzovatels+=("$user_1")
+                        #while true; do
+                        #PS3="Добавим нового пользователя? :"
+                        #local dop_polzovatel=()  # Массив для хранения имен пользователей
+                        while true; do
+                        PS3="Добавим нового пользователя? :"
+                            select user_2 in Да Нет; do
+                                case $user_2 in
+                                    Да)
+                                        users=($(awk -F: '{ print $1 }' /etc/passwd))
+                                        #users+=("Выход")
+                                        while true; do
+                                        users+=("Выход")
+                                        PS3="Выберите пользователя, которому хочешь дать разрешение на подключение к серверу с любым ip-адресом:  "
+                                        select user_2 in "${users[@]}"; do
+                                            if [[ "$user_2" == "Выход" ]]; then
+                                                echo "Вы завершили добавлять пользователей для разрешенного подключения к серверу"
+                                                dop_polzovatels+=("$user_2")
+                                                echo "Добавленные пользователи: ${dop_polzovatels[@]}"
+                                                sudo sed -i "/^AllowUsers */c\AllowUsers $dop_polzovatels" /etc/ssh/sshd_config
+                                                return  # Завершение функции
+                                            elif [[ -n "$user_2" ]]; then
+                                                dop_polzovatels+=("$user_2")
+                                                sudo sed -i "/^AllowUsers */c\AllowUsers $dop_polzovatels" /etc/ssh/sshd_config
+                                                echo "Добавленные пользователи: ${dop_polzovatels[@]}"
+                                                break
+                                            else
+                                                echo "Повторите еще раз"
+                                                break
+                                            fi
+                                            done
+                                            done
+                                            ;;
+                                    Нет)
+                                        echo "Новый пользователь не будет добавлен"
+                                        dop_polzovatels+=("$user_1")
+                                        # Выводим всех добавленных пользователей
+                                        echo "Добавленные пользователи: ${dop_polzovatels[@]}"
+                                        return
+                                        ;;
+                                    *)
+                                        echo "Повтори еще раз"
+                                        ;;
+                                esac
+                                done
+                        done
+                        done
+                    else
+                        echo "Неправильный выбор. Попробуйте еще раз."
+                    fi
+
+                done
+                #done
+                ;;
+
+
+                'Разрешить подключение нескольким пользователям с конкретного IP-адреса')
+
+                #'Разрешить подключение нескольким пользователям с любого диапазона IP-адресов')
+
+                'Разрешить подключение нескольким пользователям с конкретного диапазона IP-адресов')
+
+                'Разрешить подключение 1 пользователю с нескольких конкретных IP-адресов')
+
+                'Разрешить подключение 1 пользователю с нескольких определенных диапазонов IP-адресов')
+
+                'Разрешить подключение нескольким пользователям с конкретных IP-адресов')
+
+                'Разрешить подключение нескольким пользователям с нескольких определенных диапазонов IP-адресов')
+
+                '
+        Нет)
+            echo "Подключаться к серверу может любой созданный пользователь. !!! Если был запрещен вход root - то он не войдет !!!"
+            break
+            ;;
+        *)
+            echo "Повторите еще раз!"
+            ;;
+
+}
+AllowUsers
+
+#forward=$(sudo sed -i '/^#LoginGraceTime /c\LoginGraceTime ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PermitRootLogin prohibit-password /c\PermitRootLogin prohibit-password ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#MaxAuthTries /c\MaxAuthTries ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#MaxSessions /c\MaxSessions ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PubkeyAuthentication /c\PubkeyAuthentication ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PasswordAuthentication /c\PasswordAuthentication ' /etc/ssh/sshd_config)
+#forward=$(sudo sed -i '/^#PermitEmptyPasswords /c\PermitEmptyPasswords ' /etc/ssh/sshd_config)
+#echo "AllowUsers " > /etc/ssh/sshd_config
+
+
+
+function Restart_SSHD {
+echo "Перезагрузим службу sshd"
+eval sudo systemctl restart sshd
+eval sudo service sshd reload
+echo "sshd был перезагружен"
+}
